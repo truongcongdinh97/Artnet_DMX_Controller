@@ -1,12 +1,13 @@
 #pragma once
 #include <Arduino.h>
-#include "ConfigManager.h"
+#include <Udp.h>
 
 namespace ArtnetHandler {
   typedef void (*DmxPacketCallback)(uint16_t universe, uint16_t length, const uint8_t* data);
-  void begin(const Config& cfg);
+  
+  // ArtnetHandler giờ sẽ nhận một đối tượng UDP đã được khởi tạo từ bên ngoài
+  void begin(UDP* udp_instance);
+  
   void loop();
   void setDmxPacketCallback(DmxPacketCallback cb);
-  bool isEthernetActive();
-  bool isWifiActive();
 }

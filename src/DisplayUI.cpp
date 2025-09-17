@@ -39,3 +39,28 @@ void DisplayUI::loop() {
 }
 
 Mode DisplayUI::getMode() { return currentMode; }
+
+void DisplayUI::showRecordStatus(bool isRecording, uint32_t recordMillis) {
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("RECORD MODE");
+  lcd.setCursor(0,1); lcd.print(isRecording ? "Recording..." : "Ready");
+  lcd.setCursor(0,2); lcd.print("Time: ");
+  uint32_t sec = recordMillis / 1000;
+  uint8_t mm = sec / 60;
+  uint8_t ss = sec % 60;
+  if (mm < 10) lcd.print('0'); lcd.print(mm); lcd.print(":");
+  if (ss < 10) lcd.print('0'); lcd.print(ss);
+}
+
+void DisplayUI::showPlaybackStatus(const String& filename, uint32_t playMillis) {
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("PLAYBACK");
+  lcd.setCursor(0,1); lcd.print("File: ");
+  lcd.print(filename.length() > 12 ? filename.substring(0,12) : filename);
+  lcd.setCursor(0,2); lcd.print("Time: ");
+  uint32_t sec = playMillis / 1000;
+  uint8_t mm = sec / 60;
+  uint8_t ss = sec % 60;
+  if (mm < 10) lcd.print('0'); lcd.print(mm); lcd.print(":");
+  if (ss < 10) lcd.print('0'); lcd.print(ss);
+}

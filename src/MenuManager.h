@@ -18,6 +18,14 @@ namespace MenuManager {
     String getSelectedFile();
     PlaybackMode getLoopMode();
     void setFileList(const std::vector<String>& files);
+    // --- Bổ sung cho record ---
+    void startRecord();
+    void stopRecord();
+    bool isRecording();
+    uint32_t getRecordMillis();
+    // --- Bổ sung cho playback ---
+    uint32_t getPlaybackMillis();
+    void resetPlaybackMillis();
 }
 
 #endif

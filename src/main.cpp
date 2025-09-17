@@ -1,66 +1,78 @@
 #include <Arduino.h>
 #include "ConfigManager.h"
-#include "ArtnetHandler.h"
 #include "LEDController.h"
 #include "SDManager.h"
-#include "WebUI.h"
 #include "MenuManager.h"
+#include "WebUI.h"
+#include "ArtnetHandler.h"
 #include "PlaybackController.h"
 #include "Recording.h"
 
 
-// Track last mode to detect mode changes
-static int lastMode = -1;
+static OperatingMode lastMode;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("System starting...");
+    Serial.println("\nSystem starting...");
 
+    // 1. Khởi tạo các module cơ bản
     ConfigManager::begin();
     LEDController::begin();
+    
+    // 2. Khởi tạo SD card và các module phụ thuộc
     SDManager::begin();
-    WebUI::begin();
+    if (SDManager::isAvailable()) {
+        auto files = SDManager::listFiles("/");
+        MenuManager::setFileList(files);
+        PlaybackController::setFiles(files);
+    }
+    
     Recording::begin();
-
-    // Load danh sách file từ SD cho playback
-    auto files = SDManager::listFiles("/");  
     PlaybackController::begin();
-    PlaybackController::setFiles(files);
 
+    // 3. Khởi tạo Mạng và WebUI (luôn chạy)
+    WebUI::begin();
+
+    // 4. Khởi tạo ArtnetHandler với UDP đã được WebUI chuẩn bị
+    ArtnetHandler::begin(WebUI::getUDP());
+
+    // 5. Khởi tạo Menu và LCD
     MenuManager::begin();
     lastMode = MenuManager::getMode();
 }
 
 void loop() {
+    // Luôn chạy các module nền
     MenuManager::loop();
+    WebUI::loop();
 
-    int mode = MenuManager::getMode();
-    // Detect mode change
-    if (mode != lastMode) {
-        if (mode == MODE_RECORDING) {
-            Recording::start();
-            ArtnetHandler::setDmxPacketCallback(Recording::recordPacket);
-        } else if (lastMode == MODE_RECORDING) {
-            Recording::stop();
-            ArtnetHandler::setDmxPacketCallback(nullptr);
-        }
-        lastMode = mode;
-    }
+    OperatingMode currentMode = MenuManager::getMode();
 
-    switch (mode) {
+    // Xử lý logic theo từng mode
+    switch (currentMode) {
         case MODE_STREAMING:
             ArtnetHandler::loop();
             break;
-
         case MODE_RECORDING:
-            // Process ArtNet packets and record them
-            ArtnetHandler::loop();
+            ArtnetHandler::loop(); // Cần nhận Art-Net để ghi
             break;
-
         case MODE_PLAYBACK:
             PlaybackController::loop();
             break;
     }
 
-    WebUI::loop();
+    // Xử lý khi chuyển mode
+    if (currentMode != lastMode) {
+        if (currentMode == MODE_RECORDING) {
+            ArtnetHandler::setDmxPacketCallback(Recording::recordPacket);
+        } else if (lastMode == MODE_RECORDING) {
+            ArtnetHandler::setDmxPacketCallback(nullptr);
+        }
+        
+        if (currentMode != MODE_PLAYBACK && lastMode == MODE_PLAYBACK) {
+            PlaybackController::stop();
+        }
+        
+        lastMode = currentMode;
+    }
 }

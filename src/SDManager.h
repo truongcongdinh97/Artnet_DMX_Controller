@@ -1,4 +1,3 @@
-
 #pragma once
 #include <Arduino.h>
 #include <vector>
@@ -10,4 +9,5 @@ namespace SDManager {
   void startPlayback(const char* filename);
   void stopPlayback();
   std::vector<String> listFiles(const char* path = "/");
+  bool isAvailable(); // SD availability check
 }

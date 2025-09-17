@@ -14,8 +14,18 @@ namespace Recording {
   }
 
   void start() {
-    activeFile = SD.open("/record.dat", FILE_WRITE);
+    // Tìm số file ShowNNN.dat hiện có
+    int idx = 0;
+    char fname[20];
+    do {
+      snprintf(fname, sizeof(fname), "/Show%03d.dat", idx);
+      if (!SD.exists(fname)) break;
+      idx++;
+    } while (idx < 1000);
+    activeFile = SD.open(fname, FILE_WRITE);
     if (activeFile) recording = true;
+    Serial.print("[Recording] Start file: ");
+    Serial.println(fname);
   }
 
   void stop() {

@@ -4,13 +4,16 @@
 
 static File activeFile;
 static bool playing = false;
+static bool sdAvailable = false;
 
 void SDManager::begin() {
   if (!SD.begin()) {
     Serial.println("SD init failed!");
+    sdAvailable = false;
     return;
   }
   Serial.println("SD initialized.");
+  sdAvailable = true;
 }
 
 void SDManager::loop() {
@@ -46,4 +49,8 @@ std::vector<String> SDManager::listFiles(const char* path) {
   }
   dir.close();
   return files;
+}
+
+bool SDManager::isAvailable() {
+  return sdAvailable;
 }
