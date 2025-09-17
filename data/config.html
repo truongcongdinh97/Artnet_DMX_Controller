@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 LED Config</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; max-width: 400px; margin: auto; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 5px; }
+    button { margin-top: 15px; width: 100%; padding: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Cấu hình ESP32 LED Controller</h2>
+    <form id="configForm">
+      <label>WiFi SSID: <input name="wifiSSID" required></label>
+      <label>WiFi Password: <input name="wifiPass" type="password"></label>
+      <label>Địa chỉ IP: <input name="localIP"></label>
+      <label>Số output: <input name="outputs" type="number" min="1" max="4"></label>
+      <label>LED mỗi output: <input name="ledsPerOutput" type="number" min="1"></label>
+      <button type="submit">Lưu cấu hình</button>
+    </form>
+    <div id="msg"></div>
+  </div>
+  <div class="card">
+    <h2>Cập nhật Firmware (OTA)</h2>
+    <form id="otaForm">
+      <input type="file" name="update" required accept=".bin">
+      <button type="submit">Upload Firmware</button>
+      <div id="otaProgress"><div id="otaBar"></div></div>
+      <div id="otaMsg"></div>
+    </form>
+  </div>
+  <script>
+    // Load config
+    fetch('/config').then(r=>r.json()).then(cfg=>{
+      for(let k in cfg) if(document.querySelector(`[name=${k}]`)) document.querySelector(`[name=${k}]`).value = cfg[k];
+    });
+    document.getElementById('configForm').onsubmit = function(e){
+      e.preventDefault();
+      let fd = new FormData(this);
+      fetch('/config', {method:'POST', body:fd})
+        .then(r=>r.text()).then(msg=>document.getElementById('msg').innerText=msg);
+    }
+    // OTA upload
+    document.getElementById('otaForm').onsubmit = function(e){
+      e.preventDefault();
+      let fd = new FormData(this);
+      let xhr = new XMLHttpRequest();
+      xhr.open('POST', '/update', true);
+      xhr.upload.onprogress = function(e){
+        if(e.lengthComputable){
+          let percent = Math.round(e.loaded/e.total*100);
+          document.getElementById('otaBar').style.width = percent+'%';
+        }
+      };
+      xhr.onload = function(){
+        document.getElementById('otaMsg').innerText = xhr.responseText;
+        if(xhr.responseText.includes('OK')) setTimeout(()=>location.reload(), 3000);
+      };
+      xhr.onerror = function(){
+        document.getElementById('otaMsg').innerText = 'Lỗi upload!';
+      };
+      xhr.send(fd);
+    }
+  </script>
+</body>
+</html>
