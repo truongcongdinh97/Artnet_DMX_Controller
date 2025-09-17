@@ -37,7 +37,8 @@ void WebUI::begin() {
         json += "\"wifiPass\":\"" + cfg.wifiPass + "\",";
         json += "\"localIP\":\"" + cfg.localIP.toString() + "\",";
         json += "\"outputs\":" + String(cfg.outputs) + ",";
-        json += "\"ledsPerOutput\":" + String(cfg.ledsPerOutput);
+        json += "\"ledsPerOutput\":" + String(cfg.ledsPerOutput) + ",";
+        json += "\"deviceName\":\"LED_Controller\"";
         json += "}";
         request->send(200, "application/json", json);
     });
@@ -50,6 +51,7 @@ void WebUI::begin() {
         if (request->hasParam("localIP", true)) cfg.localIP.fromString(request->getParam("localIP", true)->value());
         if (request->hasParam("outputs", true)) cfg.outputs = request->getParam("outputs", true)->value().toInt();
         if (request->hasParam("ledsPerOutput", true)) cfg.ledsPerOutput = request->getParam("ledsPerOutput", true)->value().toInt();
+        // Không cho đổi deviceName qua WebUI
         ConfigManager::saveConfig(cfg);
         request->send(200, "text/plain", "Config updated. Please reboot to apply changes.");
     });

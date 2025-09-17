@@ -7,6 +7,8 @@ struct Config {
   IPAddress localIP;
   int outputs;
   int ledsPerOutput;
+  // Tên thiết bị cố định
+  static constexpr const char* deviceName = "LED_Controller";
 };
 
 namespace ConfigManager {
