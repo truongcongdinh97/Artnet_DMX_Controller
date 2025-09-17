@@ -22,8 +22,46 @@ void LEDController::loop() {
   FastLED.show();
 }
 
+// Mapping động: mỗi output có thể dùng nhiều universe, không cố định +4
+// Số universe/output = ceil(ledsPerOutput*3/512)
+#include "ConfigManager.h"
+#include <math.h>
 void LEDController::updateFromArtnet(uint16_t universe, uint16_t length, uint8_t* data) {
-  for (int i = 0; i < length / 3; i++) {
-    leds[0][i] = CRGB(data[i*3], data[i*3+1], data[i*3+2]);
+  Config cfg = ConfigManager::getConfig();
+  int outputs = cfg.outputs;
+  int ledsPerOutput = cfg.ledsPerOutput;
+  int startUniverse = cfg.startUniverse;
+  int channelsPerLed = 3;
+  int dmxPerUni = 512;
+
+  // Tính offset universe cho từng output
+  int outputUniverseStart[MAX_OUTPUTS];
+  int outputUniverseCount[MAX_OUTPUTS];
+  int nextUni = startUniverse;
+  for (int o = 0; o < outputs; o++) {
+    int nLed = ledsPerOutput;
+    int nUni = (int)ceil((nLed * channelsPerLed) / (float)dmxPerUni);
+    outputUniverseStart[o] = nextUni;
+    outputUniverseCount[o] = nUni;
+    nextUni += nUni;
+  }
+
+  // Tìm output nào nhận universe này
+  for (int o = 0; o < outputs; o++) {
+    int uStart = outputUniverseStart[o];
+    int uEnd = uStart + outputUniverseCount[o] - 1;
+    if (universe >= uStart && universe <= uEnd) {
+      // Tính offset LED trong output
+      int uniOffset = universe - uStart;
+      int ledOffset = (uniOffset * dmxPerUni) / channelsPerLed;
+      int maxLed = ledsPerOutput;
+      int nLed = length / channelsPerLed;
+      if (ledOffset + nLed > maxLed) nLed = maxLed - ledOffset;
+      for (int i = 0; i < nLed; i++) {
+        int di = i * channelsPerLed;
+        leds[o][ledOffset + i] = CRGB(data[di], data[di+1], data[di+2]);
+      }
+      break;
+    }
   }
 }

@@ -7,6 +7,7 @@ struct Config {
   IPAddress localIP;
   int outputs;
   int ledsPerOutput;
+  int startUniverse; // Universe bắt đầu cho output 1
   // Tên thiết bị cố định
   static constexpr const char* deviceName = "LED_Controller";
 };
