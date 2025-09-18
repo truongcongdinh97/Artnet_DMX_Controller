@@ -1,4 +1,3 @@
-
 #include "MenuManager.h"
 #include <LiquidCrystal_I2C.h>
 #include <AiEsp32RotaryEncoder.h>
@@ -7,6 +6,7 @@
 #include "Recording.h"
 #include "SDManager.h"
 #include <Preferences.h>
+#include <vector>
 
 // LCD 20x4
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -37,13 +37,17 @@ static bool playbackActive = false;
 
 static void IRAM_ATTR readEncoderISR() { encoder.readEncoder_ISR(); }
 
+// Define main menu items
+static const char* menuItems[] = { "Streaming", "Recording", "Playback", "Config" };
+static const int menuCount = sizeof(menuItems)/sizeof(menuItems[0]);
+
 void MenuManager::begin() {
     lcd.init();
     lcd.backlight();
 
     encoder.begin();
     encoder.setup(readEncoderISR);
-    encoder.setBoundaries(0, 3, false); // 4 mục: Streaming, Recording, Playback, About
+    encoder.setBoundaries(0, menuCount - 1, false); // 0-Streaming,1-Recording,2-Playback,3-Config
     encoder.setAcceleration(0);
 
     if (!SDManager::isAvailable()) {
@@ -97,175 +101,28 @@ uint32_t MenuManager::getRecordMillis() { return recordActive ? (millis() - reco
 uint32_t MenuManager::getPlaybackMillis() { return playbackActive ? (millis() - playbackStartMillis) : 0; }
 void MenuManager::resetPlaybackMillis() { playbackStartMillis = millis(); }
 
+// New menu structure implementation
 void MenuManager::loop() {
     if (encoder.encoderChanged()) {
-        if (menuLevel == 0) {
-            // menu chính: 0-Streaming, 1-Recording, 2-Playback, 3-About
-            int val = encoder.readEncoder();
-            if (val < 0) val = 0;
-            if (val > 3) val = 3;
-            encoder.setEncoderValue(val);
-
-            // Nếu chọn About thì vào menu con About
-            if (val == 3) {
-                menuLevel = 2; // menu con About
-                aboutMenuIndex = 0;
-                encoder.setBoundaries(0, 1, false); // 0 = About Device, 1 = Reset
-                encoder.setEncoderValue(aboutMenuIndex);
-                lcd.clear();
-                lcd.setCursor(0,0); lcd.print("About:");
-                lcd.setCursor(0,1); lcd.print("About Device");
-                lcd.setCursor(0,2); lcd.print("Reset");
-                return;
-            }
-
-            // Kiểm tra SD khả dụng
-            if ((val == 1 || val == 2) && !SDManager::isAvailable()) {
-                currentMode = MODE_STREAMING;
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Không tìm thấy SD!");
-                lcd.setCursor(0, 1);
-                lcd.print("Chỉ cho phép STREAM");
-                delay(2000);
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Chế độ: STREAMING");
-                encoder.setEncoderValue(0);
-            } else {
-                switch (val) {
-                    case 0: currentMode = MODE_STREAMING; break;
-                    case 1: currentMode = MODE_RECORDING; break;
-                    case 2: currentMode = MODE_PLAYBACK; break;
-                }
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Mode: ");
-                if (currentMode == MODE_STREAMING) lcd.print("STREAMING");
-                else if (currentMode == MODE_RECORDING) lcd.print("RECORDING");
-                else lcd.print("PLAYBACK");
-            }
-        }
-        else if (menuLevel == 1 && currentMode == MODE_PLAYBACK) {
-            // trong playback menu
-            if (menuIndex == 0) {
-                // chọn loop mode
-                int val = encoder.readEncoder() % 3;
-                loopMode = static_cast<PlaybackMode>(val);
-
-                // gọi trực tiếp playback
-                if (!playbackFiles.empty()) {
-                    PlaybackController::setMode(loopMode);
-                    PlaybackController::playFile(playbackFiles[selectedFileIndex]);
-                }
-            }
-            else if (menuIndex == 1 && !playbackFiles.empty()) {
-                // chọn file
-                int maxIndex = playbackFiles.size() - 1;
-                int val = encoder.readEncoder();
-                if (val < 0) val = 0;
-                if (val > maxIndex) val = maxIndex;
-                selectedFileIndex = val;
-
-                // gọi trực tiếp playback
-                PlaybackController::setMode(loopMode);
-                PlaybackController::playFile(playbackFiles[selectedFileIndex]);
-                playbackActive = true;
-                resetPlaybackMillis();
-            }
-        }
-        else if (menuLevel == 1 && currentMode == MODE_RECORDING) {
-            // Record menu: 0 = Start/Stop
-            int val = encoder.readEncoder();
-            if (val < 0) val = 0;
-            if (val > 1) val = 1;
-            encoder.setEncoderValue(val);
-            if (val == 0 && !recordActive) {
-                // Ready, nhấn nút để Start
-            }
-            if (val == 1 && recordActive) {
-                // Đang ghi, nhấn nút để Stop
-            }
-        }
+        // Main menu selection
+        int idx = encoder.readEncoder();
+        if (idx < 0) idx = 0;
+        if (idx >= menuCount) idx = menuCount - 1;
+        menuIndex = idx;
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("Menu:");
+        lcd.setCursor(0,1); lcd.print(menuItems[menuIndex]);
     }
 
     if (encoder.isEncoderButtonClicked()) {
-        if (menuLevel == 0 && currentMode == MODE_PLAYBACK) {
-            // vào playback menu
-            menuLevel = 1;
-            menuIndex = 0;
-            encoder.setBoundaries(0, 2, false); // loop modes
-            encoder.setEncoderValue(loopMode);
-        }
-        else if (menuLevel == 1) {
-            if (currentMode == MODE_PLAYBACK) {
-                if (menuIndex == 0) {
-                    // chuyển sang chọn file
-                    menuIndex = 1;
-                    if (!playbackFiles.empty()) {
-                        encoder.setBoundaries(0, playbackFiles.size() - 1, false);
-                        encoder.setEncoderValue(selectedFileIndex);
-                        // auto start playback khi vào chọn file
-                        PlaybackController::setMode(loopMode);
-                        PlaybackController::playFile(playbackFiles[selectedFileIndex]);
-                        playbackActive = true;
-                        resetPlaybackMillis();
-                    }
-                }
-                else {
-                    // thoát về menu chính
-                    menuLevel = 0;
-                    encoder.setBoundaries(0, 3, false);
-                    encoder.setEncoderValue(static_cast<int>(currentMode));
-                    playbackActive = false;
-                }
-            } else if (currentMode == MODE_RECORDING) {
-                // Record: 0 = Start, 1 = Stop
-                int val = encoder.readEncoder();
-                if (val == 0 && !recordActive) {
-                    MenuManager::startRecord();
-                } else if (val == 1 && recordActive) {
-                    MenuManager::stopRecord();
-                }
-            }
-        }
-        else if (menuLevel == 2) {
-            // Menu con About
-            aboutMenuIndex = encoder.readEncoder();
-            if (aboutMenuIndex == 0) {
-                // About Device: chỉ hiển thị thông tin
-                lcd.clear();
-                lcd.setCursor(0,0); lcd.print("LED Controller");
-                lcd.setCursor(0,1); lcd.print("FW: 2025-09-17");
-                lcd.setCursor(0,2); lcd.print("By: YourName");
-                delay(2000);
-                // Quay lại menu About
-                lcd.clear();
-                lcd.setCursor(0,0); lcd.print("About:");
-                lcd.setCursor(0,1); lcd.print("About Device");
-                lcd.setCursor(0,2); lcd.print("Reset");
-            } else if (aboutMenuIndex == 1) {
-                // RESET cấu hình WiFi
-                lcd.clear();
-                lcd.setCursor(0,0); lcd.print("Resetting...");
-                Preferences prefs;
-                prefs.begin("artnetcfg", false);
-                prefs.clear();
-                prefs.end();
-                delay(1000);
-                ESP.restart();
-            }
-        }
-        else if (menuLevel == 0 && currentMode == MODE_RECORDING) {
-            // vào record menu
-            menuLevel = 1;
-            menuIndex = 0;
-            encoder.setBoundaries(0, 1, false); // 0 = Start, 1 = Stop
-            encoder.setEncoderValue(recordActive ? 1 : 0);
-        }
+        // Enter selected mode
+        currentMode = static_cast<OperatingMode>(menuIndex);
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Mode: ");
+        lcd.print(menuItems[menuIndex]);
     }
 
-    // Cập nhật LCD
     if (menuLevel == 0) {
         lcd.setCursor(0, 1);
         lcd.print("                ");

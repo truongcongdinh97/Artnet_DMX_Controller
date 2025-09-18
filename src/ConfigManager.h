@@ -9,7 +9,9 @@ struct Config {
   int ledsPerOutput;
   int startUniverse; // Universe bắt đầu cho output 1
   // Tên thiết bị cố định
-  static constexpr const char* deviceName = "LED_Controller";
+  static constexpr const char* deviceName = "DMX_Controller_2 Universes";
+
+  Config();  // default constructor declaration
 };
 
 namespace ConfigManager {

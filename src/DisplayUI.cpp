@@ -9,8 +9,8 @@ static AiEsp32RotaryEncoder rotary(GPIO_ROTARY_A, GPIO_ROTARY_B, GPIO_ROTARY_BTN
 
 static Mode currentMode = STREAMING;
 static int menuIndex = 0;
-const char* menuItems[] = { "Mode", "Outputs", "LEDs", "Playback", "Brightness" };
-const int menuCount = sizeof(menuItems)/sizeof(menuItems[0]);
+static const char* menuItems[] = { "Streaming", "Recording", "Playback", "Config" };
+static const int menuCount = sizeof(menuItems)/sizeof(menuItems[0]);
 
 static void IRAM_ATTR readEncoderISR() { rotary.readEncoder_ISR(); }
 
@@ -25,16 +25,17 @@ void DisplayUI::begin() {
 void DisplayUI::loop() {
   if (rotary.encoderChanged()) {
     menuIndex = rotary.readEncoder();
+    if (menuIndex < 0) menuIndex = 0;
+    if (menuIndex >= menuCount) menuIndex = menuCount - 1;
     lcd.clear();
     lcd.setCursor(0,0); lcd.print("Menu:");
     lcd.setCursor(0,1); lcd.print(menuItems[menuIndex]);
   }
   if (rotary.isEncoderButtonClicked()) {
-    if (menuIndex == 0) {
-      currentMode = (Mode)((currentMode + 1) % 3);
-      lcd.setCursor(0,2); lcd.print("Mode:");
-      lcd.print(currentMode);
-    }
+    currentMode = (Mode)menuIndex;
+    lcd.clear();
+    lcd.setCursor(0,0); lcd.print("Mode: ");
+    lcd.print(menuItems[menuIndex]);
   }
 }
 

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Liên kết Show - Audio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; max-width: 400px; margin: auto; }
+    label { display: block; margin-top: 10px; }
+    select, button { width: 100%; padding: 8px; margin-top: 5px; }
+    .msg { margin-top: 15px; color: green; }
+  </style>
+</head>
+<body>
+  <h2>Liên kết Show - Audio</h2>
+  <button onclick="location.href='config.html'">Quay về Cấu hình</button>
+  <form id="linksForm">
+    <label>Chọn Show:
+      <select name="show" id="showSelect"></select>
+    </label>
+    <label>Chọn Audio:
+      <select name="audio" id="audioSelect">
+        <option value="">-- Không có --</option>
+      </select>
+    </label>
+    <button type="submit">Lưu liên kết</button>
+  </form>
+  <div class="msg" id="msg"></div>
+  <script>
+    // Load shows and audio
+    function loadLists() {
+      fetch('/files/shows').then(r=>r.json()).then(shows=>{
+        const showSel = document.getElementById('showSelect');
+        shows.forEach(s=> showSel.add(new Option(s, s)));
+        fetch('/links').then(r=>r.json()).then(links=>{
+          if (links[showSel.value]) document.getElementById('audioSelect').value = links[showSel.value];
+        });
+      });
+      fetch('/files/audio').then(r=>r.json()).then(audio=>{
+        const audioSel = document.getElementById('audioSelect');
+        audio.forEach(a=> audioSel.add(new Option(a, a)));
+      });
+    }
+    document.getElementById('showSelect').onchange = function() {
+      fetch('/links').then(r=>r.json()).then(links=>{
+        document.getElementById('audioSelect').value = links[this.value] || '';
+      });
+    };
+    document.getElementById('linksForm').onsubmit = function(e) {
+      e.preventDefault();
+      const fd = new FormData(this);
+      fetch('/links', {method:'POST', body:fd})
+        .then(r=>r.text()).then(msg=>{
+          document.getElementById('msg').innerText = 'Đã lưu liên kết.';
+        });
+    };
+    window.onload = loadLists;
+  </script>
+</body>
+</html>

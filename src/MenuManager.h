@@ -8,7 +8,8 @@
 enum OperatingMode {
     MODE_STREAMING,
     MODE_RECORDING,
-    MODE_PLAYBACK
+    MODE_PLAYBACK,
+    MODE_CONFIG
 };
 
 namespace MenuManager {

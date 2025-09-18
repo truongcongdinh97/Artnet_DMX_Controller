@@ -1,7 +1,7 @@
 #pragma once
 #include <Arduino.h>
 
-enum Mode { STREAMING, RECORDING, PLAYBACK };
+enum Mode { STREAMING, RECORDING, PLAYBACK, CONFIG };
 
 namespace DisplayUI {
   void begin();

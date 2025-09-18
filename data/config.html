@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>ESP32 LED Config</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -13,13 +14,13 @@
 <body>
   <div class="card">
     <h2>Cấu hình ESP32 LED Controller</h2>
+    <button onclick="location.href='links.html'" style="margin-top:10px;width:100%;padding:8px;">Liên kết Show–Audio</button>
     <form id="configForm">
       <label>WiFi SSID: <input name="wifiSSID" required></label>
-      <label>WiFi Password: <input name="wifiPass" type="password"></label>
-      <label>Địa chỉ IP: <input name="localIP"></label>
-      <label>Số output: <input name="outputs" type="number" min="1" max="4"></label>
-      <label>LED mỗi output: <input name="ledsPerOutput" type="number" min="1"></label>
-      <label>Universe bắt đầu: <input name="startUniverse" type="number" min="0" value="0"></label>
+      <label>WiFi Password: <input name="wifiPass" type="password" placeholder="(unchanged to keep) "></label>
+      <label>Địa chỉ IP: <input name="localIP" placeholder="192.168.1.50"></label>
+      <label>Số output (universes): <input name="outputs" type="number" min="1" max="2" value="2"></label>
+      <label>Start Universe (0–1): <input name="startUniverse" type="number" min="0" max="1" value="0"></label>
       <button type="submit">Lưu cấu hình</button>
     </form>
     <div id="msg"></div>
@@ -42,8 +43,11 @@
       e.preventDefault();
       let fd = new FormData(this);
       fetch('/config', {method:'POST', body:fd})
-        .then(r=>r.text()).then(msg=>document.getElementById('msg').innerText=msg);
-    }
+        .then(r=>r.text()).then(msg=>{
+          document.getElementById('msg').innerText = msg;
+          alert('Lưu cấu hình thành công');
+        });
+    };
     // OTA upload
     document.getElementById('otaForm').onsubmit = function(e){
       e.preventDefault();

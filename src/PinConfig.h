@@ -3,11 +3,11 @@
 // Định nghĩa các chân GPIO sử dụng cho toàn bộ dự án
 // Sửa đổi tại đây sẽ đồng bộ cho tất cả các module
 
-// LED Outputs
-#define GPIO_LED_OUT_1   5
-#define GPIO_LED_OUT_2   18
-#define GPIO_LED_OUT_3   19
-#define GPIO_LED_OUT_4   21
+// RS485 Modules for DMX Universes
+#define GPIO_RS485_1_TX   17  // DI pin of RS485 #1 (Serial2 TX)
+#define GPIO_RS485_1_DE   16  // DE/RE pin of RS485 #1
+#define GPIO_RS485_2_TX   27  // DI pin of RS485 #2 (Serial1 TX)
+#define GPIO_RS485_2_DE   14  // DE/RE pin of RS485 #2
 
 // LCD I2C
 #define GPIO_LCD_SDA     21

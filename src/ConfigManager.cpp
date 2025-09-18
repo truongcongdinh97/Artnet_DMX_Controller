@@ -4,6 +4,15 @@
 static Preferences prefs;
 static Config config;
 
+Config::Config() {
+    wifiSSID      = "";        // was "ESP32", now empty to enable STA logic
+    wifiPass      = "";
+    localIP       = IPAddress(0,0,0,0);
+    outputs       = 4;
+    ledsPerOutput = 170;
+    startUniverse = 1;
+}
+
 void ConfigManager::begin() {
   prefs.begin("artnetcfg", false);
 

@@ -1,5 +1,4 @@
 #include "PlaybackController.h"
-#include "LEDController.h"
 #include "SDManager.h"
 
 std::vector<String> PlaybackController::files;
